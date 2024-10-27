@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+ <title>rt experiment</title>
+ <script src="https://unpkg.com/jspsych@8.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@2.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-fullscreen@2.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-preload@2.0.0"></script>
+ <link href="https://unpkg.com/jspsych@8.0.0/css/jspsych.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body></body>
+<script>
+
+ // initialize jsPsych
+ var jsPsych = initJsPsych(
+   {
+     on_finish: function () {
+       jsPsych.data.displayData();
+     }
+   }
+ );
+
+ // create timeline
+ var timeline = [];
+
+ // preload images
+ var preload = {
+   type: jsPsychPreload,
+   images: ['images/blue.png', 'images/orange.png'],
+   audio: ['audio/bleep.wav','audio/buzz.wav']
+ };
+ timeline.push(preload);
+
+ // go fullscreen
+ timeline.push({
+  type: jsPsychFullscreen,
+  fullscreen_mode: true
+});
+
+ // define welcome message trial
+ var welcome = {
+   type: jsPsychHtmlKeyboardResponse,
+   stimulus: "Welcome to the experiment. Press any key to begin."
+ };
+
+ // add the welcome trial to the timeline variable
+ timeline.push(welcome);
+
+ // define the instructions trial
+ var instructions = {
+   type: jsPsychHtmlKeyboardResponse,
+   stimulus: `
+   <p>In this experiment, a circle will appear in the center
+   of the screen.</p><p>If the circle is <strong>blue</strong>,
+   press the letter B on the keyboard as fast as you can.</p>
+   <p>If the circle is <strong>orange</strong>, press the letter O
+   as fast as you can.</p>
+   <p>Press any key to begin.</p>
+ `
+ };
+
+ //add the instructions trial to the timeline
+ timeline.push(instructions);
+
+ //create an array of test stimuli to present on trials
+var test_stimuli = [
+  {stimulus: 'images/blue.png',correct_response:'b'},
+  {stimulus: 'images/orange.png',correct_response:'o'}
+];
+
+// //define test event
+// var test = {
+//   type: jsPsychImageKeyboardResponse,
+//   //now we make the stimulus something that is set by the timeline variable
+//   stimulus: jsPsych.timelineVariable('stimulus'),
+//   choices: ['b', 'o'],
+//   post_trial_gap: 0,
+//   data: {
+//     correct_response: jsPsych.timelineVariable('correct_response')
+//   },
+//   on_finish: function(data){
+//     console.log(data.correct_response);
+//     var correct_response = data.correct_response;
+//     // Score the keyboard response as correct or incorrect.
+//     if(jsPsych.pluginAPI.compareKeys(data.response, correct_response)){
+//       data.correct = true;
+//     } else {
+//       data.correct = false; 
+//     }
+//     console.log(data.correct);
+//   }
+// }
+
+var test = {
+   type: jsPsychImageKeyboardResponse,
+   prompt: "<p>Press <b>b if the circle is blue</b> and <b>o if the circle is orange</b>.</p>",
+   stimulus: jsPsych.timelineVariable('stimulus'),
+   choices: ['b', 'o'],
+   trial_duration: 5000,
+   post_trial_gap: 500,
+   data: {
+     task: "response",
+     correct_response: jsPsych.timelineVariable('correct_response')
+   },
+   on_finish: function(data){
+    console.log(data.correct_response);
+    // Score the keyboard response as correct or incorrect.
+    if(data.response == data.correct_response){
+      data.correct = true;
+    } else {
+      data.correct = false; 
+    }
+    console.log(data.correct);
+  }
+ }
+
+
+
+
+//add a fixation cross before each circle
+var fixation = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: '<div style="font-size:60px;">+</div>',
+  choices: "NO_KEYS",
+  trial_duration: 1000,
+};
+
+// var feedback = {
+//   type: jsPsychHtmlKeyboardResponse,
+//   trial_duration: 1000,
+//   stimulus: function(){
+//     // The feedback stimulus is a dynamic parameter because we can't know in advance whether
+//     // the stimulus should be 'correct' or 'incorrect'.
+//     // Instead, this function will check the accuracy of the last response and use that information to set
+//     // the stimulus value on each trial.
+//     var last_trial_correct = jsPsych.data.get().last(1).values()[0].correct;
+//     if(last_trial_correct){
+//       return "<p>Correct!</p>"; // the parameter value has to be returned from the function
+//     } else {
+//       return "<p>Wrong.</p>"; // the parameter value has to be returned from the function
+//     }
+//   }
+// }
+
+var audio_feedback = {
+  type: jsPsychAudioKeyboardResponse,
+  trial_duration: 500,
+  stimulus: function(){
+    // Check if the last response was correct or incorrect
+    // present audio depending on the response
+    var last_trial_correct = jsPsych.data.get().last(1).values()[0].correct;
+    if(last_trial_correct){
+      return "audio/bleep.wav"; // the parameter value has to be returned from the function
+    } else {
+      return "audio/buzz.wav"; // the parameter value has to be returned from the function
+    }
+  }
+}
+
+// create the procedure
+var test_procedure = {
+  timeline: [fixation,test,audio_feedback],
+  timeline_variables: test_stimuli,
+  repetitions: 1,
+  randomize_order: true
+};
+
+ timeline.push(test_procedure);
+
+ // start the experiment
+ jsPsych.run(timeline);
+
+</script>
+
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+ <title>rt experiment</title>
+ <script src="https://unpkg.com/jspsych@8.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.0.0"></script>
+ <script src="https://unpkg.com/@jspsych/plugin-preload@2.0.0"></script>
+ <link href="https://unpkg.com/jspsych@8.0.0/css/jspsych.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body></body>
+<script>
+
+ // initialize jsPsych
+ var jsPsych = initJsPsych(
+   {
+     on_finish: function () {
+       jsPsych.data.displayData();
+     }
+   }
+ );
+
+ // create timeline
+ var timeline = [];
+
+ // preload images
+ var preload = {
+   type: jsPsychPreload,
+   images: ['images/blue.png', 'images/orange.png']
+ };
+ timeline.push(preload);
+
+ // define welcome message trial
+ var welcome = {
+   type: jsPsychHtmlKeyboardResponse,
+   stimulus: "Welcome to the experiment. Press any key to begin."
+ };
+
+ // add the welcome trial to the timeline variable
+ timeline.push(welcome);
+
+ // define the instructions trial
+ var instructions = {
+   type: jsPsychHtmlKeyboardResponse,
+   stimulus: `
+   <p>In this experiment, a circle will appear in the center
+   of the screen.</p><p>If the circle is <strong>blue</strong>,
+   press the letter B on the keyboard as fast as you can.</p>
+   <p>If the circle is <strong>orange</strong>, press the letter O
+   as fast as you can.</p>
+   <p>Press any key to begin.</p>
+ `
+ };
+
+ //add the instructions trial to the timeline
+ timeline.push(instructions);
+
+ // create a trial showing the blue circle
+ var blue_trial = {
+   type: jsPsychImageKeyboardResponse,
+   stimulus: 'images/blue.png',
+   choices: ['b', 'o']
+ };
+
+ // create a trial showing the orange circle
+ var orange_trial = {
+   type: jsPsychImageKeyboardResponse,
+   stimulus: 'images/orange.png',
+   choices: ['b', 'o']
+ };
+ 
+
+ timeline.push(blue_trial, orange_trial);
+
+
+ // start the experiment
+ jsPsych.run(timeline);
+
+</script>
+
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>rt experiment</title>
+  <script src="https://unpkg.com/jspsych@8.0.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.0.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.0.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@2.0.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-button-response@2.0.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-preload@2.0.0"></script>
+  <link href="https://unpkg.com/jspsych@8.0.0/css/jspsych.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body></body>
+<script>
+
+  // initialize jsPsych
+  var jsPsych = initJsPsych(
+    {
+      on_finish: function () {
+        jsPsych.data.displayData();
+      }
+    }
+  );
+
+  jsPsych.randomization.sampleWithoutReplacement
+
+  // generate a random subject ID with 15 characters
+  var subject_id = jsPsych.randomization.randomID(15);
+
+  // pick a random condition for the subject at the start of the experiment
+  var condition_assignment = jsPsych.randomization.sampleWithoutReplacement(['conditionA', 'conditionB', 'conditionC'], 1)[0];
+
+  // record the condition assignment in the jsPsych data
+  // this adds a property called 'subject' and a property called 'condition' to every trial
+  jsPsych.data.addProperties({
+    subject: subject_id,
+    condition: condition_assignment
+  });
+
+  // create timeline
+  var timeline = [];
+
+  // preload images
+  var preload = {
+    type: jsPsychPreload,
+    images: ['images/blue.png', 'images/orange.png']
+  };
+  timeline.push(preload);
+
+  // define welcome message trial
+  var welcome = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: "Welcome to the experiment. Press any key to begin."
+  };
+
+  // add the welcome trial to the timeline variable
+  timeline.push(welcome);
+
+  // define the instructions trial
+  var instructions = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+   <p>In this experiment, a circle will appear in the center
+   of the screen.</p><p>If the circle is <strong>blue</strong>,
+   press the letter B on the keyboard as fast as you can.</p>
+   <p>If the circle is <strong>orange</strong>, press the letter O
+   as fast as you can.</p>
+   <p>Press any key to begin.</p>
+ `
+  };
+
+  //add the instructions trial to the timeline
+  timeline.push(instructions);
+
+  //blue circle check
+  var blue_check = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: "Which of these circles is blue?",
+    choices: ['<img src="images/blue.png">', '<img src="images/orange.png">'],
+    post_trial_gap: 500
+  };
+  timeline.push(blue_check);
+
+  //orange circle check
+  var orange_check = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: "Which of these circles is orange?",
+    choices: ['<img src="images/blue.png">', '<img src="images/orange.png">'],
+    post_trial_gap: 500
+  };
+  timeline.push(orange_check);
+
+  //create a fixation cross
+  var fixation = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<div style="font-size:60px;">+</div>',
+    choices: "NO_KEYS",
+    trial_duration: 1000,
+  };
+
+  //create the test stimuli we will use to set the timeline variable
+  var test_stimuli = [
+    { stimulus: 'images/blue.png', correct_response: 'b' },
+    { stimulus: 'images/orange.png', correct_response: 'o' }
+  ];
+
+  // create the core test trial structure with a stimulus timeline variable
+  var test = {
+    type: jsPsychImageKeyboardResponse,
+    prompt: "<p>Press <b>b if the circle is blue</b> and <b>o if the circle is orange</b>.</p>",
+    stimulus: jsPsych.timelineVariable('stimulus'),
+    choices: ['b', 'o'],
+    trial_duration: 5000,
+    post_trial_gap: 0,
+    data: {
+      task: "response",
+      correct_response: jsPsych.timelineVariable('correct_response')
+    },
+    on_finish: function (data) {
+      console.log(data.correct_response);
+      // Score the keyboard response as correct or incorrect.
+      if (data.response == data.correct_response) {
+        data.correct = true;
+      } else {
+        data.correct = false;
+      }
+      console.log(data.correct);
+    }
+  };
+
+  var feedback = {
+    type: jsPsychHtmlKeyboardResponse,
+    trial_duration: 1000,
+    stimulus: function () {
+      // The feedback stimulus is a dynamic parameter because we can't know in advance whether
+      // the stimulus should be 'correct' or 'incorrect'.
+      // Instead, this function will check the accuracy of the last response and use that information to set
+      // the stimulus value on each trial.
+      var last_trial_correct = jsPsych.data.get().last(1).values()[0].correct;
+      if (last_trial_correct) {
+        return "<p>Correct!</p>"; // the parameter value has to be returned from the function
+      } else {
+        return "<p>Incorrect.</p>"; // the parameter value has to be returned from the function
+      }
+    }
+  };
+
+  var audio_feedback = {
+    type: jsPsychAudioKeyboardResponse,
+    trial_duration: 500,
+    stimulus: function () {
+      // Check if the last response was correct or incorrect
+      // present audio depending on the response
+      var last_trial_correct = jsPsych.data.get().last(1).values()[0].correct;
+      if (last_trial_correct) {
+        return "audio/bleep.wav"; // the parameter value has to be returned from the function
+      } else {
+        return "audio/buzz.wav"; // the parameter value has to be returned from the function
+      }
+    }
+  };
+
+  //create a test procedure with a fixation followed by a test trial
+  var test_procedure = {
+    timeline: [fixation, test, audio_feedback],
+    timeline_variables: test_stimuli,
+    randomize_order: true,
+    repetitions: 5
+  };
+
+
+  //add the test procedure to the experiment timeline
+  timeline.push(test_procedure);
+
+  // start the experiment
+  jsPsych.run(timeline);
+
+</script>
+
+</html>
